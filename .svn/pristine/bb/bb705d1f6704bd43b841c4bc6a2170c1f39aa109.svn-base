@@ -1,0 +1,175 @@
+/**
+ * 
+ */
+package com.epam.profile.dao;
+
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import javax.persistence.Query;
+import javax.persistence.TypedQuery;
+
+import org.springframework.stereotype.Repository;
+
+import com.epam.profile.dto.DropDownDTO;
+import com.epam.profile.model.Education;
+
+/**
+ * @author HOME
+ *
+ */
+@Repository
+public class EducationDAOImpl implements EducationDAO {
+	@PersistenceContext
+	EntityManager entityManager;
+	/* (non-Javadoc)
+	 * @see com.epam.profile.dao.EducationDAO#addNewEducationRecord(com.epam.profile.model.Education)
+	 */
+	@Override
+	public void addNewEducationRecord(Education education) {
+		entityManager.persist(education);
+	}
+
+	/* (non-Javadoc)
+	 * @see com.epam.profile.dao.EducationDAO#updateEducationDetails(com.epam.profile.model.Education)
+	 */
+	@Override
+	public void updateEducationDetails(Education education) {
+		Education educationObj = entityManager.find(Education.class,education.getEducationId());
+		educationObj.setCollege(education.getCollege());
+		educationObj.setDegree(education.getDegree());
+		educationObj.setDepartment(education.getDepartment());
+		educationObj.setGraduationYear(education.getGraduationYear());
+		educationObj.setInComplete(education.getInComplete());
+		educationObj.setInstitution(education.getInstitution());
+		educationObj.setSpeciality(education.getSpeciality());
+	}
+
+	/* (non-Javadoc)
+	 * @see com.epam.profile.dao.EducationDAO#deleteEducationRecordById(java.lang.Integer)
+	 */
+	@Override
+	public boolean deleteEducationRecordById(Integer educationId) {
+		Query query = entityManager.createQuery("DELETE From Education where upper(educationId)=upper(:educationId)");
+		query.setParameter("educationId", educationId);
+		int count  = query.executeUpdate();
+		return count>0?true:false;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.epam.profile.dao.EducationDAO#findEducationByPagination(int, int)
+	 */
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<Education> findEducationByPagination(int pageNo, int pageSize) {
+		Query query = entityManager.createQuery("From Education");
+		query.setFirstResult((pageNo-1) * pageSize);
+		query.setMaxResults(pageSize);
+		return query.getResultList();
+	}
+
+	/* (non-Javadoc)
+	 * @see com.epam.profile.dao.EducationDAO#findTotalNoOfRecords()
+	 */
+	@Override
+	public Long findTotalNoOfRecords() {
+		 Query query = entityManager.createQuery("SELECT count(*) FROM Education");
+		  Long count = (Long) query.getSingleResult();
+         return count;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.epam.profile.dao.EducationDAO#getEducationDetailsById(java.lang.Integer)
+	 */
+	@Override
+	public Education getEducationDetailsById(Integer educationId) {
+		TypedQuery<Education> query = entityManager.createQuery("From Education where educationId=:educationId",Education.class);
+		query.setParameter("educationId", educationId);
+		List<Education> educationList = query.getResultList();
+		return educationList.size()>0?educationList.get(0):new Education();
+	}
+
+	@Override
+	public List<DropDownDTO> getInstitutions() {
+		Query query = entityManager.createQuery("select institutionId,institutionName From Institution");
+		@SuppressWarnings("unchecked")
+		List<Object[]> list= query.getResultList();
+		List<DropDownDTO> institutionList = new ArrayList<DropDownDTO>();
+		for(Object[] contact:list){
+			DropDownDTO dropDownDTO = new DropDownDTO();
+			dropDownDTO.setKey(Integer.parseInt(contact[0].toString()));
+			dropDownDTO.setValue(contact[1].toString());
+			institutionList.add(dropDownDTO);
+		}
+		return institutionList;
+	}
+	@Override
+	public List<DropDownDTO> getCollegesByInstitutionId(Integer institutionId) {
+		Query query = entityManager.createQuery("select collegeId,collegeName From College where institution.institutionId=:institutionId");
+		query.setParameter("institutionId", institutionId);
+		@SuppressWarnings("unchecked")
+		List<Object[]> list= query.getResultList();
+		List<DropDownDTO> collegeList = new ArrayList<DropDownDTO>();
+		for(Object[] contact:list){
+			DropDownDTO dropDownDTO = new DropDownDTO();
+			dropDownDTO.setKey(Integer.parseInt(contact[0].toString()));
+			dropDownDTO.setValue(contact[1].toString());
+			collegeList.add(dropDownDTO);
+		}
+		return collegeList;
+	}
+	@Override
+	public List<DropDownDTO> getDepartmentsByInstitutionId(Integer institutionId) {
+		Query query = entityManager.createQuery("select departmentId,departmentName From Department where institution.institutionId=:institutionId");
+		query.setParameter("institutionId", institutionId);
+		@SuppressWarnings("unchecked")
+		List<Object[]> list= query.getResultList();
+		List<DropDownDTO> departmentList = new ArrayList<DropDownDTO>();
+		for(Object[] contact:list){
+			DropDownDTO dropDownDTO = new DropDownDTO();
+			dropDownDTO.setKey(Integer.parseInt(contact[0].toString()));
+			dropDownDTO.setValue(contact[1].toString());
+			departmentList.add(dropDownDTO);
+		}
+		return departmentList;
+	}
+	@Override
+	public Map<String,String> getAllInstitutions() {
+		Query query = entityManager.createQuery("select institutionId,institutionName From Institution");
+		@SuppressWarnings("unchecked")
+		List<Object[]> list= query.getResultList();
+		Map<String,String> institutionMap = new HashMap<String,String>();
+		for(Object[] contact:list){
+			institutionMap.put(contact[0].toString(), contact[1].toString());
+		}
+		return institutionMap;
+	}
+	@Override
+	public Map<String,String> getAllColleges() {
+		Query query = entityManager.createQuery("select collegeId,collegeName From College");
+		@SuppressWarnings("unchecked")
+		List<Object[]> list= query.getResultList();
+		Map<String,String> institutionMap = new HashMap<String,String>();
+		for(Object[] contact:list){
+			institutionMap.put(contact[0].toString(), contact[1].toString());
+		
+		}
+		return institutionMap;
+	}
+	@Override
+	public Map<String,String> getAllDepartments() {
+		Query query = entityManager.createQuery("select departmentId,departmentName From Department");
+		@SuppressWarnings("unchecked")
+		List<Object[]> list= query.getResultList();
+		Map<String,String> institutionMap = new HashMap<String,String>();
+		for(Object[] contact:list){
+			institutionMap.put(contact[0].toString(), contact[1].toString());
+		}
+		return institutionMap;
+	}
+}

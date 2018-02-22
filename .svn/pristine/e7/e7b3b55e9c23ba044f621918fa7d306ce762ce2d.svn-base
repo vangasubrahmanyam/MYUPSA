@@ -1,0 +1,368 @@
+/**
+ * 
+ */
+package com.epam.profile.dao;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import javax.persistence.Query;
+import javax.persistence.TypedQuery;
+
+import org.springframework.stereotype.Repository;
+
+import com.epam.profile.model.Address;
+import com.epam.profile.model.Children;
+import com.epam.profile.model.Contact;
+import com.epam.profile.model.Designations;
+import com.epam.profile.model.Employee;
+import com.epam.profile.model.HRContact;
+import com.epam.profile.model.JobLevels;
+import com.epam.profile.model.JobNames;
+import com.epam.profile.model.ReportContact;
+import com.epam.profile.model.Roles;
+import com.epam.profile.model.Unit;
+
+/**
+ * @author Subrahmanyam_Vanga
+ *
+ */
+@Repository
+public class UserDAOImpl implements UserDAO {
+	@PersistenceContext
+	EntityManager entityManager; 
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<Employee> findAllUsers() {
+		Query query = entityManager.createQuery("From Employee");
+		return query.getResultList();
+	}
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<Employee> findUsersByPagination(int pageNo, int pageSize,int loggedInUserId) {
+		Query query = entityManager.createQuery("From Employee where userId not in(:userId)");
+		query.setParameter("userId", loggedInUserId);
+		query.setFirstResult((pageNo-1) * pageSize);
+		query.setMaxResults(pageSize);
+		return query.getResultList();
+	}
+
+	@Override
+	public void saveUser(Employee user) {
+		entityManager.persist(user);
+		if(user.getJobDetails().getHrContactsIds()==null && user.getJobDetails().getHrContactsIds().isEmpty() || user.getJobDetails().getHrContactsIds().equals("0") ){
+			user.getJobDetails().setHrContactsIds(String.valueOf(user.getUserId()));
+		}
+	}
+	@Override
+	public Long findTotalNoOfUsers(){
+		  Query query = entityManager.createQuery("SELECT count(*) FROM Employee");
+		  Long count = (Long) query.getSingleResult();
+          return count>0?count-1:count;
+	}
+	@Override
+	public Employee getMyAccountDetailsByUserId(String userId) {
+		TypedQuery<Employee> query = entityManager.createQuery("From Employee where upper(userId)=upper(:userId)",Employee.class);
+		query.setParameter("userId", userId);
+		List<Employee> userList = query.getResultList();
+		return userList.size()>0?userList.get(0):new Employee();
+	}
+	@Override
+	public void updateMyAccountDetails(Employee user) {
+		Employee userObj = entityManager.find(Employee.class,user.getUserId());
+		userObj.setUserName(user.getUserName());
+		userObj.setFirstName(user.getFirstName());
+		userObj.setMiddleName(user.getMiddleName());
+		userObj.setNativeName(user.getNativeName());
+		userObj.setLastName(user.getLastName());
+		userObj.setGender(user.getGender());
+		userObj.setMaritalStatus(user.getMaritalStatus());
+		userObj.setEmail(user.getEmail());
+		userObj.setImage(user.getImage());
+		userObj.setPhone(user.getPhone());
+		if(user.getDateOfBirth()!=null && user.getDateOfBirth()!="")
+		userObj.setDateOfBirth(user.getDateOfBirth());
+		else
+			userObj.setDateOfBirth(null);
+		userObj.setDrivingLicence(user.getDrivingLicence());
+		if(user.getDrivingLicenceExpiry()!=null && user.getDrivingLicenceExpiry()!="")
+		userObj.setDrivingLicenceExpiry(user.getDrivingLicenceExpiry());
+		else
+			userObj.setDrivingLicenceExpiry(null);
+		userObj.setGovernmentId(user.getGovernmentId());
+		userObj.settShirtSize(user.gettShirtSize());
+		userObj.setRemoteWork(user.getRemoteWork());
+		//For Adding/Updating/Deleting Childrens  
+		for(Children children:userObj.getChildrens()){
+			entityManager.remove(children);
+		}
+		List<Children> newChildrens = new ArrayList<>();
+		for(Children children:user.getChildrens()){
+			newChildrens.add(children);
+		}
+		userObj.setChildrens(newChildrens);
+		
+		//For Adding/Updating/Deleting Childrens
+		for(Address address:userObj.getAddresses()){
+			entityManager.remove(address);
+		}
+		List<Address> addresses = new ArrayList<>();	
+		for(Address address:user.getAddresses()){
+			addresses.add(address);
+		}
+		userObj.setAddresses(addresses);
+		
+		//For Adding/Updating/Deleting Childrens
+		for(Contact contact:userObj.getContacts()){
+			entityManager.remove(contact);
+		}
+		List<Contact> contacts = new ArrayList<>();	
+		for(Contact contact:user.getContacts()){
+			contacts.add(contact);
+		}
+		userObj.setContacts(contacts);
+		entityManager.merge(userObj);
+	}
+	@Override
+	public boolean deleteEmployeeById(Integer userId) {
+		Query query = entityManager.createQuery("DELETE From Employee where upper(userId)=upper(:userId)");
+		query.setParameter("userId", userId);
+		int count  = query.executeUpdate();
+		return count>0?true:false;
+	}
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<JobNames> getJobNames() {
+		Query query = entityManager.createQuery("From JobNames");
+		return query.getResultList();
+	}
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<JobLevels> getJobLevels() {
+		Query query = entityManager.createQuery("From JobLevels");
+		return query.getResultList();
+	}
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<Designations> getDesignations() {
+		Query query = entityManager.createQuery("From Designations");
+		return query.getResultList();
+	}
+	@Override
+	public String findDesignationById(String designationId) {
+			Query query = entityManager.createQuery("select designationName From Designations where designationId in(:designationId)");
+			query.setParameter("designationId", Integer.parseInt(designationId));
+			@SuppressWarnings("unchecked")
+			List<String> list = query.getResultList();
+			return list.get(0).toString();
+
+	}
+	@Override
+	public String findJobNameById(String jobId) {
+			Query query = entityManager.createQuery("select jobName From JobNames where jobId in(:jobId)");
+			query.setParameter("jobId", Integer.parseInt(jobId));
+			return query.getResultList().get(0).toString();
+
+	}
+	@Override
+	public String findJobLevelById(String jobLevelId) {
+			Query query = entityManager.createQuery("select jobLevelName From JobLevels where jobLevelId in(:jobLevelId)");
+			query.setParameter("jobLevelId", Integer.parseInt(jobLevelId));
+			return query.getResultList().get(0).toString();
+	}
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<Address> getAddressesByUserId(String userId) {
+		Query query = entityManager.createQuery("From Address where employee.userId in(:userId)");
+		query.setParameter("userId", Integer.parseInt(userId));
+		return query.getResultList();
+	}
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<Children> getChildrensByUserId(String userId) {
+		Query query = entityManager.createQuery("From Children where employee.userId in(:userId)");
+		query.setParameter("userId", Integer.parseInt(userId));
+		return query.getResultList();
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<Contact> getContactsByUserId(String userId) {
+		Query query = entityManager.createQuery("From Contact where employee.userId in(:userId)");
+		query.setParameter("userId", Integer.parseInt(userId));
+		return query.getResultList();
+	}
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<Roles> getRolesByUnit(Integer unitId) {
+		Query query = entityManager.createQuery("From Roles where unit.unitId=:unitId");
+		query.setParameter("unitId", unitId);
+		return query.getResultList();
+	}
+	@Override
+	public String findRoleById(String roleId) {
+			Query query = entityManager.createQuery("select primaryRole From Roles where roleId in(:roleId)");
+			query.setParameter("roleId", Integer.parseInt(roleId));
+			return query.getResultList().get(0).toString();
+
+	}
+	@Override
+	public String findReportManagerById(Integer reportManagerId) {
+			StringBuilder builder = new StringBuilder();
+			Query query = entityManager.createQuery("select firstName,lastName,middleName From Employee where userId in(:reportManagerId)");
+			query.setParameter("reportManagerId", reportManagerId);
+			@SuppressWarnings("unchecked")
+			List<Object[]> list = query.getResultList();
+			Object[]result = list.get(0);
+			builder.append(result[0].toString()+" "+result[1].toString()+" "+result[2].toString());
+			return builder.toString();
+	}
+	@Override
+	public String findUnitById(Integer unitId) {
+			Query query = entityManager.createQuery("select unitName From Unit where unitId in(:unitId)");
+			query.setParameter("unitId", unitId);
+			@SuppressWarnings("unchecked")
+			List<String> list = query.getResultList();
+			return list.get(0);
+	}
+	@Override
+	public Set<HRContact> getHRContactsByUnitLevel(Integer unitLevel) {
+			
+		Query query = entityManager.createQuery("select concat(e.firstName,' ',e.lastName),e.userId From Employee e where e.jobDetails.unitId in (select u.unitId from Unit u  where u.unitCategory ='Human Resources' and u.unitLevel in(?,?,?)) ");
+		query.setParameter(1, unitLevel-1);	
+		query.setParameter(2, unitLevel);
+		query.setParameter(3, unitLevel+1);
+		@SuppressWarnings("unchecked")
+			List<Object[]> list = query.getResultList();
+			Set<HRContact> hrContacts = new HashSet<>();
+			if(!list.isEmpty()){
+			
+				for(Object[] contact:list){
+					HRContact hrContact = new HRContact();
+					hrContact.setHrContactName(contact[0].toString());
+					hrContact.setHrContactId(Integer.parseInt(contact[1].toString()));
+					hrContacts.add(hrContact);
+				}
+			}
+			return hrContacts;
+	}
+	@Override
+	public Set<HRContact> getHRContactsByUnitId(Integer unitId) {
+			
+		Query query = entityManager.createQuery("select concat(e.firstName,' ',e.lastName),e.userId From Employee e where e.userId in(e.jobDetails.hrContactsIds) and e.jobDetails.unitId=:unitId");
+		query.setParameter("unitId", unitId);	
+		@SuppressWarnings("unchecked")
+			List<Object[]> list = query.getResultList();	
+			Set<HRContact> hrContacts = new HashSet<>();
+			if(!list.isEmpty()){
+			
+				for(Object[] contact:list){
+					HRContact hrContact = new HRContact();
+					hrContact.setHrContactName(contact[0].toString());
+					hrContact.setHrContactId(Integer.parseInt(contact[1].toString()));
+					hrContacts.add(hrContact);
+				}
+			}
+			return hrContacts;
+	}
+	@Override
+	public HRContact[] getHRContactsById(List<Integer> userIds) {
+			Query query = entityManager.createQuery("select concat(e.firstName,' ',e.lastName),e.userId From Employee e where e.userId in(:userIds)");
+			query.setParameter("userIds", userIds);
+			@SuppressWarnings("unchecked")
+			List<Object[]> list = query.getResultList();
+			HRContact hrContact[]=null;
+			if(!list.isEmpty()){
+				hrContact= new HRContact[list.size()];
+				int i=0;
+				for(Object[] contact:list){
+					HRContact contact2 = new HRContact();
+					contact2.setHrContactName(contact[0].toString());
+					contact2.setHrContactId(Integer.parseInt(contact[1].toString()));
+					hrContact[i++]=contact2;
+				}
+			}
+			return hrContact;
+	}
+	@Override
+	public List<HRContact> getReportsToByUnitLevel(Integer unitLevel,Integer unitId) {
+			
+			Query query = entityManager.createQuery("select concat(e.firstName,' ',e.lastName),e.userId From Employee e where e.jobDetails.unitId = (select u.superiorUnit from Unit u  where u.unitId =:unitId) ");
+			query.setParameter("unitId",unitId);
+			@SuppressWarnings("unchecked")
+			List<Object[]> list = query.getResultList();
+			List<HRContact> hrContacts = new ArrayList<>();
+			if(!list.isEmpty()){
+			
+				for(Object[] contact:list){
+					HRContact hrContact = new HRContact();
+					hrContact.setHrContactName(contact[0].toString());
+					hrContact.setHrContactId(Integer.parseInt(contact[1].toString()));
+					hrContacts.add(hrContact);
+				}
+			}
+			return hrContacts;
+	}
+	@Override
+	public List<HRContact> getReportsToByUnitId(Integer unitId) {
+			
+			Query query = entityManager.createQuery("select concat(e.firstName,' ',e.lastName,' ',e.middleName),e.userId From Employee e where e.jobDetails.unitId = :unitId and upper(e.jobDetails.unitManager)='YES'");
+			query.setParameter("unitId",unitId);
+			@SuppressWarnings("unchecked")
+			List<Object[]> list = query.getResultList();
+			List<HRContact> hrContacts = new ArrayList<>();
+			if(!list.isEmpty()){
+			
+				for(Object[] contact:list){
+					HRContact hrContact = new HRContact();
+					hrContact.setHrContactName(contact[0].toString());
+					hrContact.setHrContactId(Integer.parseInt(contact[1].toString()));
+					hrContacts.add(hrContact);
+				}
+			}
+			return hrContacts;
+	}
+	
+	@Override
+	public List<Unit> getUnits() {
+			Query query = entityManager.createQuery("From Unit order by unitLevel");
+			@SuppressWarnings("unchecked")
+			List<Unit> units = query.getResultList();
+			return units;
+	}
+	@Override
+	public Integer findUnitLevelById(Integer unitId) {
+		Query query = entityManager.createQuery("select unitLevel From Unit where unitId =:unitId");
+		query.setParameter("unitId", unitId);
+		Integer unitLevel = Integer.parseInt(query.getResultList().get(0).toString());
+		return unitLevel;
+	}
+	@Override
+	public void findUnitManagerByUnitId(Integer unitId,ReportContact reportContact) {
+		Query query = entityManager.createQuery("select concat(e.firstName,' ',e.lastName,' ',e.middleName),e.userId From Employee e where e.jobDetails.unitId = :unitId and upper(e.jobDetails.unitManager)='YES'");
+		query.setParameter("unitId", unitId);
+		@SuppressWarnings("unchecked")
+		List<Object[]> list= query.getResultList();
+		String unitManager=null;
+		for(Object[] contact:list){
+			reportContact.setUnitManagaerName(contact[0].toString());
+			reportContact.setUnitManagerId((Integer.parseInt(contact[1].toString())));
+		}
+	}
+	@Override
+	public List<Employee> searchEmployee(String searchWord) {
+		Query query = entityManager.createQuery(" From Employee as e where upper(e.firstName) like :firstSearchWord or upper(e.lastName) like :lastSearchWord or upper(e.middleName) like :middleSearchWord ",Employee.class);
+		query.setParameter("firstSearchWord", "%"+searchWord+"%");
+		query.setParameter("lastSearchWord", "%"+searchWord+"%");
+		query.setParameter("middleSearchWord", "%"+searchWord+"%");
+		@SuppressWarnings("unchecked")
+		List<Employee> userList = query.getResultList();
+		return userList;
+	}
+	
+}

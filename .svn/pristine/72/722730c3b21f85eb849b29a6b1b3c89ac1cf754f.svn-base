@@ -1,0 +1,48 @@
+package com.epam.profile.service;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.epam.profile.dao.PastProjectDAO;
+import com.epam.profile.model.PastProject;
+import com.epam.profile.model.ProfileSummary;
+
+@Service
+public class PastProjectService {
+	@Autowired
+	PastProjectDAO pastProjectDAO;
+	@Transactional(propagation = Propagation.REQUIRED,readOnly=false)
+	public void addProjectDetails(PastProject pastProject) {
+		pastProjectDAO.addProjectDetails(pastProject);
+	}
+	public List<PastProject> getAllProjectDetails(int userId){
+		List<PastProject> allProjects = pastProjectDAO.getAllProjectDetails(userId);
+		return	allProjects;	
+	}
+	public PastProject getProjectDetailsById(String projectId) {
+		return pastProjectDAO.getProjectDetailsById(Integer.parseInt(projectId));
+	}
+	@Transactional(propagation = Propagation.REQUIRED,readOnly=false)
+	public void updateProjectDetails(PastProject pastProject) {
+		pastProjectDAO.updateProjectDetails(pastProject);
+		
+	}
+	@Transactional(propagation = Propagation.REQUIRED,readOnly=false)
+	public void updateProfileSummary(ProfileSummary summary) {
+		pastProjectDAO.updateProfileSummary(summary);
+		
+	}
+	@Transactional(propagation = Propagation.REQUIRED,readOnly=false)
+	public void addProfileSummary(ProfileSummary summary) {
+		pastProjectDAO.addProfileSummary(summary);
+	}
+	public ProfileSummary getProfileSummaryDetailsById(String summaryId) {
+		return pastProjectDAO.getProfileSummaryDetailsById(Integer.parseInt(summaryId));
+	}
+	
+	
+}

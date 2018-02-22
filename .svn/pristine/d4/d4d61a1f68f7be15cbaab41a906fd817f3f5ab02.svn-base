@@ -1,0 +1,60 @@
+package com.epam.profile.service;
+
+import java.text.ParseException;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.epam.profile.dao.EducationDAO;
+import com.epam.profile.dto.DropDownDTO;
+import com.epam.profile.model.Education;
+
+@Service
+public class EducationService {
+	@Autowired
+	EducationDAO educationDAO;
+	public List<Education> findEducationByPagination(int pageNo,int pageSize){
+		List<Education> educations = educationDAO.findEducationByPagination(pageNo,pageSize);
+		Map<String,String>  institutionMap = educationDAO.getAllInstitutions();
+		Map<String,String>  collegeMap = educationDAO.getAllColleges();
+		Map<String,String>  departmentMap = educationDAO.getAllDepartments();
+		for(Education education:educations){
+			education.setInstitution(institutionMap.get(education.getInstitution()));
+			education.setDepartment(departmentMap.get(education.getDepartment()));
+			education.setCollege(collegeMap.get(education.getCollege()));
+		}
+	return	educations;	
+	}
+	@Transactional(propagation = Propagation.REQUIRED,readOnly=false)
+	public void addNewEducationRecord(Education education) {
+		educationDAO.addNewEducationRecord(education);
+	}
+	public Long findTotalNoOfRecords() {
+		return educationDAO.findTotalNoOfRecords();
+	}
+	@Transactional(propagation = Propagation.REQUIRED,readOnly=false)
+	public void updateEducationDetails(Education education) throws ParseException {
+		educationDAO.updateEducationDetails(education);
+	}
+	@Transactional(propagation = Propagation.REQUIRED,readOnly=false)
+	public boolean deleteEducationRecordById(Integer educationId) {
+		return educationDAO.deleteEducationRecordById(educationId);
+	}
+	public Education getEducationDetailsById(String educationId) {
+		return educationDAO.getEducationDetailsById(Integer.parseInt(educationId));
+	}
+	public List<DropDownDTO> getInstitutions() {
+		return educationDAO.getInstitutions();
+	}
+	public List<DropDownDTO> getCollegesByInstitutionId(Integer institutionId) {
+		return educationDAO.getCollegesByInstitutionId(institutionId);
+	}
+	public List<DropDownDTO> getDepartmentsByInstitutionId(Integer institutionId) {
+		return educationDAO.getDepartmentsByInstitutionId(institutionId);
+	}
+	
+}
